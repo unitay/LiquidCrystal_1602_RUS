@@ -6,27 +6,35 @@
 
 class LiquidCrystal_1602_RUS : public LiquidCrystal {
 public:
-	LiquidCrystal_1602_RUS(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
-	void print(const wchar_t[]);
-	void print(const char[]);
-  void print(int, int = DEC);
-  void print(unsigned int, int = DEC);
-  void print(long, int = DEC);
-  void print(unsigned long, int = DEC);
-  void print(const String &);
-  void print(char, int = BYTE);
-  void print(unsigned char, int = BYTE);
-  void print(double, int = 2);
-  void clear();
-	void setCursor(uint8_t, uint8_t); 
-	uint8_t getCursorCol(); 
-	uint8_t getCursorRow(); 
-  wchar_t *asciiutf8(unsigned char);
+    LiquidCrystal_1602_RUS(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
+    
+    void begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
+    
+    void print(const wchar_t[]);
+    void printF(const wchar_t[]);
+    void printF(const wchar_t[], uint8_t, uint8_t = 0);
+    void print(const char[]);
+    void print(int, int = DEC);
+    void print(unsigned int, int = DEC);
+    void print(long, int = DEC);
+    void print(unsigned long, int = DEC);
+    void print(const String &);
+    void print(char);
+    void print(unsigned char, int = DEC);
+    void print(double, int = 2);
+    void print(int code, bool spec);
+    void fillLine();
+    void clear();
+    void setCursor(uint8_t, uint8_t); 
+    uint8_t getCursorCol(); 
+    uint8_t getCursorRow(); 
 
 private:
   void CharSetToLCD(uint8_t *, uint8_t *);
   void ResetAllIndex();
 
+  uint8_t cols_count;
+  
   int symbol_index;//Индекс символа (от 0 до 7)
   uint8_t cursor_col;
   uint8_t cursor_row;
@@ -79,6 +87,8 @@ private:
   uint8_t index_rus_ee;
   uint8_t index_rus_yu;
   uint8_t index_rus_ya;
+
+  uint8_t index_zn_kol;
 };
 
 extern const byte rus_B[];
@@ -130,4 +140,4 @@ extern const byte rus_ee[];
 extern const byte rus_yu[];
 extern const byte rus_ya[];
 
-extern wchar_t *char_utf8;
+extern const byte zn_kol[];

@@ -5,8 +5,21 @@
 LiquidCrystal_1602_RUS :: LiquidCrystal_1602_RUS(uint8_t rs,  uint8_t enable,
                              uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3) : LiquidCrystal (rs, enable, d0, d1, d2, d3)
 {
-   symbol_index = 0;
-   ResetAllIndex();//Сброс значений индексов (неинициализированы = 255)
+    symbol_index = 0;
+    ResetAllIndex();//Сброс значений индексов (неинициализированы = 255)
+}
+void LiquidCrystal_1602_RUS::begin(uint8_t cols, uint8_t lines, uint8_t dotsize)
+{
+    cols_count = cols;
+    LiquidCrystal::begin(cols, lines, dotsize);
+}
+//заполняет оставшееся место в строке пробелами
+void LiquidCrystal_1602_RUS::fillLine()
+{
+    for (uint8_t i = cursor_col ; i < cols_count ; i++) {
+        print(' ');
+    }
+    cursor_col = cols_count;
 }
 void LiquidCrystal_1602_RUS::clear()
 {
@@ -42,8 +55,8 @@ void LiquidCrystal_1602_RUS::print(long val, int base){
 void LiquidCrystal_1602_RUS::print(unsigned long val, int base){
   cursor_col += LiquidCrystal::print(val, base);
 }
-void LiquidCrystal_1602_RUS::print(char val, int base){
-  cursor_col += LiquidCrystal::print(val, base);
+void LiquidCrystal_1602_RUS::print(char val){
+  cursor_col += LiquidCrystal::print(val);
 }
 void LiquidCrystal_1602_RUS::print(unsigned char val, int base){
   cursor_col += LiquidCrystal::print(val, base);
@@ -53,6 +66,18 @@ void LiquidCrystal_1602_RUS::print(const String &str){
 }
 void LiquidCrystal_1602_RUS::print(double val, int base){
   cursor_col += LiquidCrystal::print(val, base);
+}
+void LiquidCrystal_1602_RUS::printF(const wchar_t *_str) {
+    printF(_str, cols_count);
+}
+void LiquidCrystal_1602_RUS::printF(const wchar_t *_str, uint8_t length, uint8_t startIndex) {
+    wchar_t bufferDisp[length+1];
+
+    for (uint8_t i = 0 ; i < length ; i++) {
+        bufferDisp[i] = pgm_read_word(_str + i + startIndex);
+    }
+    bufferDisp[length] = 0;
+    print(bufferDisp);
 }
 void LiquidCrystal_1602_RUS::print(const wchar_t *_str){
   uint8_t rus_[8];
@@ -71,6 +96,7 @@ void LiquidCrystal_1602_RUS::print(const wchar_t *_str){
     {
       //Русский алфавит, требующий новых символов
       //Единовременно может быть заменено только 8 символов
+      //{
       case 1041: //Б
         memcpy_PF(rus_, (uint32_t)rus_B, 8);
         CharSetToLCD((uint8_t *)rus_, &index_rus_B);
@@ -259,7 +285,9 @@ void LiquidCrystal_1602_RUS::print(const wchar_t *_str){
         memcpy_PF(rus_, (uint32_t)rus_ya, 8);
         CharSetToLCD((uint8_t *)rus_, &index_rus_ya);
       break;
+      //}
       //Русский алфавит, использующий одинаковые с английским алфавитом символы
+      //{
       case 1040: //А
         LiquidCrystal::print("A");
       break;
@@ -320,6 +348,7 @@ void LiquidCrystal_1602_RUS::print(const wchar_t *_str){
       case 0x00B0: //Знак градуса
         LiquidCrystal::write(223);
       break;
+      //}
       //Английский алфавит без изменения
       default:
         LiquidCrystal::print((char)_str[current_char]);
@@ -328,7 +357,17 @@ void LiquidCrystal_1602_RUS::print(const wchar_t *_str){
     current_char++;
     cursor_col++;
   }
- 
+}
+void LiquidCrystal_1602_RUS::print(int code, bool spec) {
+    uint8_t arr[8];
+
+    switch(code) {
+        case 1: //Знак колокольчика
+            memcpy_PF(arr, (uint32_t)zn_kol, 8);
+            CharSetToLCD((uint8_t *)arr, &index_zn_kol);      
+        break;
+    }
+    cursor_col++;
 }
 void LiquidCrystal_1602_RUS::CharSetToLCD(uint8_t *array, uint8_t *index)
 {
@@ -341,13 +380,13 @@ void LiquidCrystal_1602_RUS::CharSetToLCD(uint8_t *array, uint8_t *index)
     createChar(symbol_index, (uint8_t *)array);// Создаем символ на текущем (по очереди) месте в знакогенераторе (от 0 до MAX_SYMBOL_COUNT)
     setCursor(x,y);
     write(symbol_index);// Выводим символ на экран
-    //Запомианем, что букве соответствует определенный индекс
+    //Запоминаем, что букве соответствует определенный индекс
     *index = symbol_index;
     symbol_index++;
     if(symbol_index >= MAX_SYMBOL_COUNT)
     {
     	symbol_index = 0;
-	ResetAllIndex();
+        ResetAllIndex();
     }
   }
   else   //Иначе печатаем уже существующий
@@ -403,22 +442,11 @@ void LiquidCrystal_1602_RUS::ResetAllIndex()
   index_rus_ee=255;
   index_rus_yu=255;
   index_rus_ya=255;
+  index_zn_kol=255;
 }
 
-//Перевод символа из кодировки ASCII в UTF-8 (для печати расширенных русских символов на LCD)
-wchar_t *LiquidCrystal_1602_RUS::asciiutf8(unsigned char ascii)
-{
-  if (ascii==168) *char_utf8 = 0x401;//код ASCII буквы Ё
-  else if (ascii==184) *char_utf8 = 0x451;//код ASCII буквы ё
-  else if ((ascii>=192)&&(ascii<=255))//остальные буквы русского алфавита
-  {
-    *char_utf8 = ascii+848;
-  }
-  else *char_utf8 = ascii;
-
-  return char_utf8;
-}
-
+//symbols
+//{
 //Б
 const byte rus_B[8] PROGMEM = {
   0b11111,
@@ -910,5 +938,14 @@ const byte rus_ya[8] PROGMEM = {
   0b01001,
   0b00000
 };//я
-
-wchar_t *char_utf8 = L" ";
+const byte zn_kol[8] PROGMEM = {
+  0b00100,
+  0b01110,
+  0b01110,
+  0b01110,
+  0b11111,
+  0b00100,
+  0b00000,
+  0b00000
+};//колокольчик
+//}
